@@ -87,13 +87,31 @@
     // Recover object from fetched results
     NSManagedObject *managedObject = [fetchedResultsController objectAtIndexPath:indexPath];
     cell.textLabel.text = [managedObject valueForKey:@"notes"];
+    
+    cell.accessoryType = [managedObject valueForKey:@"pass"] ?
+        UITableViewCellAccessoryCheckmark :
+        UITableViewCellAccessoryNone;
+    
     return cell;
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath 
 {
-    // NSManagedObject *managedObject = [fetchedResultsController objectAtIndexPath:indexPath];
-    // some action here
+    
+    UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
+    cell.accessoryType = (cell.accessoryType == UITableViewCellAccessoryNone) ?
+        UITableViewCellAccessoryCheckmark :
+        UITableViewCellAccessoryNone;
+    
+    
+    SlideItem *item = (SlideItem *)[fetchedResultsController objectAtIndexPath:indexPath];
+    item.pass = [NSNumber numberWithBool:(cell.accessoryType == UITableViewCellAccessoryCheckmark)];
+    
+    // save the new item
+    NSError *error; 
+    if (![context save:&error]) NSLog(@"Error: %@", [error localizedFailureReason]);
+    
+    //[self performFetch];
 }
 
 - (BOOL)tableView:(UITableView *)tableView canMoveRowAtIndexPath:(NSIndexPath *)indexPath 
@@ -171,6 +189,7 @@
     [av show];
 }
 
+/*
 - (void) initCoreData
 {
     NSError *error;
@@ -190,6 +209,7 @@
         [context setPersistentStoreCoordinator:persistentStoreCoordinator];
     }
 }
+ */
 
 - (void) loadView
 {
@@ -199,7 +219,7 @@
     self.navigationController.navigationBar.tintColor = COOKBOOK_PURPLE_COLOR;
     //self.navigationItem.rightBarButtonItem = BARBUTTON(@"Action", @selector(action:));
     
-    [self initCoreData];
+    //[self initCoreData];
     [self performFetch];
     [self setBarButtonItems];
 }
@@ -212,6 +232,11 @@
 - (void)setRoll:(RollItem *)roll
 {
     selectedRoll = roll;
+}
+
+- (void)setContext:(NSManagedObjectContext *)_context
+{
+    context = _context;
 }
 
 @end
@@ -295,6 +320,7 @@
     // NSManagedObject *managedObject = [fetchedResultsController objectAtIndexPath:indexPath];
     // some action here
     SlideViewController *svc = [[SlideViewController alloc] init];
+    [svc setContext:context];
     [svc setRoll:[fetchedResultsController objectAtIndexPath:indexPath]];
     [self.navigationController pushViewController:svc animated:YES];
     
