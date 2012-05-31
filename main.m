@@ -23,6 +23,61 @@
 }
 @end
 
+@interface LightboxViewController : UIViewController
+{
+    UISlider *slider;
+    float previousValue;
+}
+@end
+
+@implementation LightboxViewController
+
+- (void) updateBg: (UISlider *) aSlider
+{
+    self.view.backgroundColor = [UIColor colorWithRed:1.0f green:1.0f blue:1.0f alpha:aSlider.value];
+}
+
+- (void) loadView
+{
+    
+    [super loadView];
+    self.view.backgroundColor = [UIColor whiteColor];
+    
+    self.navigationController.navigationBar.tintColor = COOKBOOK_PURPLE_COLOR;
+   
+    // Set global UISlider appearance attributes
+    [[UISlider appearance] setMinimumTrackTintColor:[UIColor blackColor]];
+    [[UISlider appearance] setMaximumTrackTintColor:[UIColor grayColor]];
+    
+    // Create slider
+	slider = [[UISlider alloc] initWithFrame:(CGRect){.size=CGSizeMake(200.0f, 40.0f)}];
+    //[slider setThumbImage:simpleThumb() forState:UIControlStateNormal];
+    slider.minimumValue = 0.5f;
+    slider.maximumValue = 1.0f;
+	slider.value = 1.0f;
+    
+	// Create the callbacks for touch, move, and release
+	//[slider addTarget:self action:@selector(startDrag:) forControlEvents:UIControlEventTouchDown];
+	[slider addTarget:self action:@selector(updateBg:) forControlEvents:UIControlEventValueChanged];
+	//[slider addTarget:self action:@selector(endDrag:) forControlEvents:UIControlEventTouchUpInside | UIControlEventTouchUpOutside];
+	
+	// Present the slider
+	[self.view addSubview:slider];
+	//[self performSelector:@selector(updateThumb:) withObject:slider afterDelay:0.1f];
+}
+
+- (BOOL) shouldAutorotateToInterfaceOrientation:
+    (UIInterfaceOrientation)toInterfaceOrientation
+{
+    return YES;
+}
+
+- (void) touchesBegan:(NSSet*)touches withEvent:(UIEvent*)event
+{
+    [self dismissModalViewControllerAnimated:YES];
+}
+@end
+
 @implementation SlideViewController
 - (void) performFetch
 {
@@ -88,9 +143,14 @@
     NSManagedObject *managedObject = [fetchedResultsController objectAtIndexPath:indexPath];
     cell.textLabel.text = [managedObject valueForKey:@"notes"];
     
+    /*
     cell.accessoryType = [managedObject valueForKey:@"pass"] ?
         UITableViewCellAccessoryCheckmark :
         UITableViewCellAccessoryNone;
+    */
+    
+    cell.accessoryType =
+        UITableViewCellAccessoryDetailDisclosureButton;
     
     return cell;
 }
@@ -124,6 +184,20 @@
 {
     // left item is always add
     self.navigationItem.rightBarButtonItem = SYSBARBUTTON(UIBarButtonSystemItemAdd, @selector(add));
+    //self.navigationItem.title = [NSString stringWithFormat:@"Slides: %@", selectedRoll.title];
+    
+    // Create the segmented control
+    NSArray *buttonNames = [NSArray arrayWithObjects:
+                            @"One", @"Lightbox", nil];
+    UISegmentedControl* segmentedControl = [[UISegmentedControl alloc]
+                                            initWithItems:buttonNames];
+    segmentedControl.segmentedControlStyle = UISegmentedControlStyleBar;
+    segmentedControl.momentary = YES;
+    [segmentedControl addTarget:self action:@selector(segmentAction:)
+               forControlEvents:UIControlEventValueChanged];
+    
+    // Add it to the navigation bar
+    self.navigationItem.titleView = segmentedControl;
     
     /*
     // right (edit/done) item depends on both edit mode and item count
@@ -133,6 +207,18 @@
     else
         self.navigationItem.rightBarButtonItem =  count ? SYSBARBUTTON(UIBarButtonSystemItemEdit, @selector(enterEditMode)) : nil;
      */
+}
+
+-(void) segmentAction: (UISegmentedControl *) segmentedControl
+{
+    if (segmentedControl.selectedSegmentIndex == 1) {
+        
+        LightboxViewController *lvc = [[LightboxViewController alloc] init];
+        lvc.modalPresentationStyle = UIModalTransitionStyleFlipHorizontal;
+        [self.navigationController presentModalViewController:
+            lvc animated:YES];
+    }
+    //[(UITextView *)self.view setText:segmentNumber];
 }
 
 -(void)enterEditMode
@@ -312,6 +398,10 @@
     // Recover object from fetched results
     NSManagedObject *managedObject = [fetchedResultsController objectAtIndexPath:indexPath];
     cell.textLabel.text = [managedObject valueForKey:@"title"];
+    
+    cell.accessoryType =
+        UITableViewCellAccessoryDetailDisclosureButton;
+    
     return cell;
 }
 
@@ -336,6 +426,7 @@
 {
     // left item is always add
     self.navigationItem.rightBarButtonItem = SYSBARBUTTON(UIBarButtonSystemItemAdd, @selector(add));
+    self.navigationItem.title = @"My Rolls";
     
     // right (edit/done) item depends on both edit mode and item count
     int count = [[fetchedResultsController fetchedObjects] count];
