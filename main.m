@@ -9,13 +9,15 @@
 #import "RollItem.h"
 #import "SlideItem.h"
 
-#define COOKBOOK_PURPLE_COLOR    [UIColor colorWithRed:0.20392f green:0.19607f blue:0.61176f alpha:1.0f]
+#define COOKBOOK_PURPLE_COLOR    [UIColor colorWithRed:0.21392f green:0.18607f blue:0.60176f alpha:1.0f]
 #define BARBUTTON(TITLE, SELECTOR)     [[UIBarButtonItem alloc] initWithTitle:TITLE style:UIBarButtonItemStylePlain target:self action:SELECTOR]
 #define SYSBARBUTTON(ITEM, SELECTOR) [[UIBarButtonItem alloc] initWithBarButtonSystemItem:ITEM target:self action:SELECTOR] 
+#define IS_IPHONE			(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone)
 
 #pragma mark -
 #pragma mark TestBedViewController
-@interface SlideViewController : UITableViewController <NSFetchedResultsControllerDelegate>
+@interface SlideViewController : UITableViewController <NSFetchedResultsControllerDelegate, UIPickerViewDelegate, UIActionSheetDelegate, UIPickerViewDataSource>
+
 {
     NSManagedObjectContext *context;
     NSFetchedResultsController *fetchedResultsController;
@@ -78,7 +80,201 @@
 }
 @end
 
+@interface SlideEditViewController : UIViewController
+{
+    UISlider *slider;
+    float previousValue;
+}
+@end
+
+@implementation SlideEditViewController
+
+- (void) updateBg: (UISlider *) aSlider
+{
+    self.view.backgroundColor = [UIColor colorWithRed:1.0f green:1.0f blue:1.0f alpha:aSlider.value];
+}
+
+- (void) loadView
+{
+    
+    [super loadView];
+    self.view.backgroundColor = [UIColor whiteColor];
+    
+    self.navigationController.navigationBar.tintColor = COOKBOOK_PURPLE_COLOR;
+    self.navigationItem.rightBarButtonItem = SYSBARBUTTON(UIBarButtonSystemItemAdd, @selector(save:));
+    self.navigationItem.leftBarButtonItem = SYSBARBUTTON(UIBarButtonSystemItemAdd, @selector(cancel));
+    
+    
+    // Create slider
+	//UILabel *lblSubject = [[UILabel alloc] initWithFrame:(CGRect){.size=CGSizeMake(200.0f, 20.0f)}];
+    UILabel *lblSubject = [[UILabel alloc] initWithFrame:CGRectMake(10.0, 20.0, 200.0f, 20.0f)];
+    lblSubject.text = @"Subject";
+    UILabel *lblFrame = [[UILabel alloc] initWithFrame:CGRectMake(10.0, 50.0, 200.0f, 20.0f)];
+    lblFrame.text = @"Frame";
+    UILabel *lblIso = [[UILabel alloc] initWithFrame:CGRectMake(10.0, 80.0, 200.0f, 20.0f)];
+    lblIso.text = @"ISO";
+    UILabel *lblF = [[UILabel alloc] initWithFrame:CGRectMake(10.0, 110.0, 200.0f, 20.0f)];
+    lblF.text = @"F";
+    
+    UISlider *slIso = [[UISlider alloc] initWithFrame:
+                         CGRectMake(100.0, 80.0, 200.0f, 20.0f)];
+    UISlider *slF = [[UISlider alloc] initWithFrame:
+                       CGRectMake(100.0, 110.0, 200.0f, 20.0f)];
+    
+    //[slider setThumbImage:simpleThumb() forState:UIControlStateNormal];
+    //slider.minimumValue = 0.5f;
+    //slider.maximumValue = 1.0f;
+	//slider.value = 1.0f;
+    
+	// Create the callbacks for touch, move, and release
+	//[slider addTarget:self action:@selector(startDrag:) forControlEvents:UIControlEventTouchDown];
+	//[slider addTarget:self action:@selector(updateBg:) forControlEvents:UIControlEventValueChanged];
+	//[slider addTarget:self action:@selector(endDrag:) forControlEvents:UIControlEventTouchUpInside | UIControlEventTouchUpOutside];
+	
+	// Present the slider
+    [self.view addSubview:lblFrame];
+	[self.view addSubview:lblSubject];
+    [self.view addSubview:lblIso];
+	[self.view addSubview:lblF];
+    [self.view addSubview:slIso];
+	[self.view addSubview:slF];
+	//[self performSelector:@selector(updateThumb:) withObject:slider afterDelay:0.1f];
+}
+
+- (BOOL) shouldAutorotateToInterfaceOrientation:
+(UIInterfaceOrientation)toInterfaceOrientation
+{
+    return YES;
+}
+
+- (void) touchesBegan:(NSSet*)touches withEvent:(UIEvent*)event
+{
+    [self dismissModalViewControllerAnimated:YES];
+}
+@end
+
 @implementation SlideViewController
+
+
+// Setting values
+- (NSArray *)getArrayISO
+{
+    return [@"25/50/100/125/200/400/800/1200" componentsSeparatedByString: @"/"];
+}
+
+- (NSArray *)getArrayShutterSpeed
+{
+    return [@"1*1/30*1/60*1/250*1/500" componentsSeparatedByString: @"*"];
+}
+
+- (NSArray *)getArrayApperature
+{
+    return [@"2.0/2.8/4.5/5.6/8.0/11.0/16.0/22.0" componentsSeparatedByString: @"/"];
+}
+
+- (NSArray *)getArrayMode
+{
+    return [@"A/S/M/P" componentsSeparatedByString: @"/"];
+}
+
+
+- (NSInteger)numberOfComponentsInPickerView:(UIPickerView *)pickerView
+{
+	return 3; // three columns
+}
+
+- (NSInteger)pickerView:(UIPickerView *)pickerView numberOfRowsInComponent:(NSInteger)component
+{
+	//return 20; // twenty items per column
+    switch (component) {
+        case 0:
+            return [[self getArrayShutterSpeed] count];
+            break;
+        case 1:
+            return [[self getArrayApperature] count];
+            break;
+        case 2:
+            return [[self getArrayMode] count];
+            break;
+    }
+    
+    return 0;
+}
+
+- (NSString *)pickerView:(UIPickerView *)pickerView titleForRow:(NSInteger)row forComponent:(NSInteger)component
+{
+	//return [NSString stringWithFormat:@"%@-%d", component == 1 ? @"R" : @"L", row];
+    
+    switch (component) {
+        case 0:
+            return [[self getArrayShutterSpeed] objectAtIndex:row];
+            break;
+        case 1:
+            return [[self getArrayApperature] objectAtIndex:row];
+            break;
+        case 2:
+            return [[self getArrayMode] objectAtIndex:row];
+            break;
+    }
+    
+    return @"";
+    
+}
+
+- (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+	UIPickerView *pickerView = (UIPickerView *)[actionSheet viewWithTag:101];
+	self.title = [NSString stringWithFormat:@"L%d-R%d-L%d", [pickerView selectedRowInComponent:0], [pickerView selectedRowInComponent:1], [pickerView selectedRowInComponent:2]];
+}
+
+- (void)pickerView:(UIPickerView *)pickerView didSelectRow:(NSInteger)row inComponent:(NSInteger)component
+{
+	self.title = [NSString stringWithFormat:@"L%d-R%d-L%d", [pickerView selectedRowInComponent:0], [pickerView selectedRowInComponent:1], [pickerView selectedRowInComponent:2]];
+}
+
+- (void) action: (id) sender
+{
+	
+	// Establish enough space for the picker
+	NSString *title = @"Bam!\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
+	/*
+    if (IS_IPHONE)
+		title = UIDeviceOrientationIsLandscape([UIDevice currentDevice].orientation) ? @"\n\n\n\n\n\n\n\n\n" : @"\n\n\n\n\n\n\n\n\n\n\n\n" ;
+    */
+    
+	// Create the base action sheet
+	UIActionSheet *actionSheet = [[UIActionSheet alloc] initWithTitle:title delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:nil otherButtonTitles:@"Save", nil];
+    
+    if (IS_IPHONE)
+        [actionSheet showInView:self.view];
+    else
+        [actionSheet showFromBarButtonItem:sender animated:NO];
+	
+	// Build the picker
+	UIPickerView *pickerView = [[UIPickerView alloc] init];
+	pickerView.tag = 101;
+	pickerView.delegate = self;
+	pickerView.dataSource = self;
+	pickerView.showsSelectionIndicator = YES;
+    
+	// If working with an iPad, adjust the frames as needed
+	if (!IS_IPHONE)
+	{
+		pickerView.frame = CGRectMake(0.0f, 0.0f, 272.0f, 216.0f);
+		CGPoint center = actionSheet.center;
+		actionSheet.frame = CGRectMake(0.0f, 40.0f, 272.0f, 253.0f);
+		actionSheet.center = center;
+	}
+	
+	// Embed the picker
+    UILabel *lblSubject = [[UILabel alloc] initWithFrame:CGRectMake(0.0f, 220.0f, 272.0f, 40.0f)];
+    lblSubject.text = @"\t\t\tShutter\t\t\t\t\t\t\t\t\tApperture\t\t\t\t\t\tMode";
+    [actionSheet addSubview:lblSubject];
+    
+    
+	[actionSheet addSubview:pickerView];
+}
+
 - (void) performFetch
 {
     // Init a fetch request
@@ -158,6 +354,7 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath 
 {
     
+    /*
     UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
     cell.accessoryType = (cell.accessoryType == UITableViewCellAccessoryNone) ?
         UITableViewCellAccessoryCheckmark :
@@ -170,8 +367,18 @@
     // save the new item
     NSError *error; 
     if (![context save:&error]) NSLog(@"Error: %@", [error localizedFailureReason]);
-    
+    */
+    /*
     //[self performFetch];
+    
+    SlideEditViewController *svc = [[SlideEditViewController alloc] init];
+    //[svc setContext:context];
+    //[svc setRoll:[fetchedResultsController objectAtIndexPath:indexPath]];
+    [self.navigationController pushViewController:svc animated:YES];
+    
+    //self.navigationItem.rightBarButtonItem = BARBUTTON(@"Action", @selector(action:));
+    */
+    [self action:[tableView cellForRowAtIndexPath:indexPath]];
 }
 
 - (BOOL)tableView:(UITableView *)tableView canMoveRowAtIndexPath:(NSIndexPath *)indexPath 
